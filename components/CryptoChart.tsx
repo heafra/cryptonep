@@ -7,9 +7,8 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 } from "chart.js";
-
 import { Line } from "react-chartjs-2";
 
 // Register Chart.js components
@@ -23,33 +22,36 @@ ChartJS.register(
   Legend
 );
 
-const CryptoChart = () => {
-  const data = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May"],
+interface CryptoChartProps {
+  labels: string[];
+  data: number[];
+}
+
+export default function CryptoChart({ labels, data }: CryptoChartProps) {
+  const chartData = {
+    labels,
     datasets: [
       {
         label: "Portfolio Value ($)",
-        data: [1000, 1200, 900, 1400, 1300],
-        borderColor: "rgba(75,192,192,1)",
-        backgroundColor: "rgba(75,192,192,0.2)"
-      }
-    ]
+        data,
+        borderColor: "rgb(75, 192, 192)",
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+      },
+    ],
   };
 
   const options = {
     responsive: true,
     plugins: {
       legend: {
-        position: "top" as const
+        position: "top" as const,
       },
       title: {
         display: true,
-        text: "Crypto Portfolio Value"
-      }
-    }
+        text: "Crypto Portfolio",
+      },
+    },
   };
 
-  return <Line data={data} options={options} />;
-};
-
-export default CryptoChart;
+  return <Line data={chartData} options={options} />;
+}
