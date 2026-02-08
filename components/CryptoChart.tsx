@@ -1,4 +1,4 @@
-// components/CryptoChart.tsx
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -7,9 +7,8 @@ import {
   LineElement,
   Title,
   Tooltip,
-  Legend,
+  Legend
 } from "chart.js";
-import { Line } from "react-chartjs-2";
 
 // Register Chart.js components
 ChartJS.register(
@@ -22,36 +21,44 @@ ChartJS.register(
   Legend
 );
 
+// Example props
 interface CryptoChartProps {
   labels: string[];
   data: number[];
 }
 
-export default function CryptoChart({ labels, data }: CryptoChartProps) {
+const CryptoChart: React.FC<CryptoChartProps> = ({ labels, data }) => {
   const chartData = {
     labels,
     datasets: [
       {
         label: "Portfolio Value ($)",
         data,
-        borderColor: "rgb(75, 192, 192)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-      },
-    ],
+        fill: true,
+        backgroundColor: "rgba(99, 132, 255, 0.2)",
+        borderColor: "rgba(99, 132, 255, 1)",
+        tension: 0.4
+      }
+    ]
   };
 
   const options = {
     responsive: true,
     plugins: {
       legend: {
-        position: "top" as const,
+        position: "top" as const
       },
       title: {
         display: true,
-        text: "Crypto Portfolio",
-      },
-    },
+        text: "Crypto Portfolio Chart"
+      }
+    }
   };
 
   return <Line data={chartData} options={options} />;
-}
+};
+
+export default CryptoChart;
+
+
+
