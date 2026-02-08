@@ -1,15 +1,9 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import prisma from "../../../lib/prisma";
 import bcrypt from "bcrypt";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
 
 export default NextAuth({
-  session: {
-    strategy: "jwt",
-  },
-
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -17,54 +11,38 @@ export default NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-
+        const user = await prisma.user.findUnique({ where: { email: credentials?.email } });
         if (!user) return null;
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
+        const isValid = credentials?.password ? await bcrypt.compare(credentials.password, user.password) : false;
         if (!isValid) return null;
 
-        return user;
+        return { id: user.id, email: user.email, balance: user.balance, invested: user.invested };
       },
     }),
   ],
-
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        const u = user as any; // 👈 important line
-        token.id = u.id;
-        token.balance = u.balance;
-        token.invested = u.invested;
+        token.id = user.id;
+        token.balance = user.balance;
+        token.invested = user.invested;
       }
       return token;
     },
-
     async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).balance = token.balance;
-        (session.user as any).invested = token.invested;
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.balance = token.balance as number;
+        session.user.invested = token.invested as number;
       }
       return session;
     },
   },
-
-  pages: {
-    signIn: "/login",
-  },
-
   secret: process.env.NEXTAUTH_SECRET,
+  session: { strategy: "jwt" },
 });
+
+
+

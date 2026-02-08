@@ -1,29 +1,30 @@
-import Prisma from "@prisma/client";
-const prisma = new Prisma.PrismaClient();
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export default async function handler(req, res) {
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "./auth/[...nextauth]";
+import prisma from "../../lib/prisma";
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { userId, amount } = req.body;
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) return res.status(401).json({ error: "Not authenticated" });
 
-  if (!userId || !amount) return res.status(400).json({ error: "Missing data" });
+  const { amount } = req.body;
+  if (!amount || amount <= 0) return res.status(400).json({ error: "Invalid amount" });
 
-  try {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) return res.status(404).json({ error: "User not found" });
+  if (user.balance < amount) return res.status(400).json({ error: "Insufficient balance" });
 
-    if (!user || user.balance < amount)
-      return res.status(400).json({ error: "Insufficient balance" });
+  const updated = await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      balance: { decrement: Number(amount) },
+      invested: { increment: Number(amount) },
+    },
+  });
 
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        balance: { decrement: amount },
-        invested: { increment: amount },
-      },
-    });
-
-    res.status(200).json({ balance: updated.balance, invested: updated.invested });
-  } catch (err) {
-    res.status(500).json({ error: "DB error" });
-  }
+  res.json({ balance: updated.balance, invested: updated.invested });
 }
+
